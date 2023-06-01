@@ -3,7 +3,7 @@ import * as THREE from 'three'
 const dt = 0.0015
 const rot_vel = 5
 
-export class Sun {
+export class Sky {
     mesh
     light
     ambient_light
@@ -21,19 +21,18 @@ export class Sun {
 
         this.light = new THREE.PointLight(0xffffff, 1, 0)
         this.light.position.set(0, this.r, 0)
-        console.log(this.light.position)
-        scene.add(this.light)
 
         this.ambient_light = new THREE.AmbientLight(0xffffff, 0.5)
-        scene.add(this.ambient_light)
 
         this.stars(scene)
 
         this.scene = scene
     }
 
-    returnMesh() {
-        return this.mesh
+    addMeshToScene(scene) {
+        scene.add(this.light)
+        scene.add(this.ambient_light)
+        scene.add(this.stars_points)
     }
 
     // Move this until utils.js
@@ -68,8 +67,6 @@ export class Sun {
             sizeAttenuation: false,
         })
         this.stars_points = new THREE.Points(geometry, material)
-
-        scene.add(this.stars_points)
     }
 
     update() {

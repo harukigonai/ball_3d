@@ -2,7 +2,7 @@ import * as THREE from 'three'
 
 const dt = 0.015
 // const dt = 0.0015 * 2
-const g = 9.8
+export const g = 9.8
 
 const e_y = 0.8
 const e_horiz = 0.8
@@ -57,8 +57,8 @@ export class Ball {
         this.gameClient = params.gameClient
     }
 
-    returnMesh() {
-        return this.mesh
+    addMeshToScene(scene) {
+        scene.add(this.mesh)
     }
 
     // throw() {}
@@ -132,7 +132,7 @@ export class Ball {
 
     update(ballMap) {
         this._update(ballMap)
-        this.gameClient.updateBall(this.uuid, this.mesh.position)
+        // this.gameClient.updateBall(this.uuid, this.mesh.position)
     }
 
     _update(ballMap) {

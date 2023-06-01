@@ -5,12 +5,13 @@ import * as THREE from 'three'
 export class GameClient {
     socket
     ballMap
+    playerMap
     setupScene
-    initBallMapDone = false
 
-    constructor({ ballMap: ballMap, setupScene: setupScene }) {
+    constructor({ setupScene: setupScene }) {
         this.socket = io('http://localhost:3000/')
-        this.ballMap = ballMap
+        this.ballMap = new Map()
+        this.playerMap = new Map()
         this.setupScene = setupScene
     }
 
@@ -29,8 +30,6 @@ export class GameClient {
         this.socket.addEventListener('message', (data) => {
             const packet = JSON.parse(data)
 
-            console.log(packet)
-
             switch (packet.type) {
                 case 'updatePlayer':
                     // ...
@@ -41,7 +40,7 @@ export class GameClient {
                 case 'initBallMap':
                     this.handleInitBallMap(packet.content)
 
-                    this.setupScene()
+                    this.setupScene(this.ballMap, this.playerMap)
                     break
             }
         })
@@ -58,13 +57,14 @@ export class GameClient {
         )
     }
 
-    updateBall(uuid, position) {
+    updateBall(uuid, position, vel) {
         this.socket.send(
             JSON.stringify({
                 type: 'updateBall',
                 content: {
                     uuid: uuid,
                     position: position,
+                    vel: vel,
                 },
             })
         )
@@ -87,11 +87,25 @@ export class GameClient {
                 })
             )
         })
-
-        console.log(this.ballMap)
-
-        this.initBallMapDone = true
     }
 
-    handleUpdateBall(ballFromSrvr) {}
+    handleInitPlayerMap() {}
+
+    handleUpdateBall(ballFromSrvr) {
+        const ball = this.ballMap.get(ballFromSrvr.uuid.toString())
+
+        ball.mesh.position.set(
+            ballFromSrvr.position.x,
+            ballFromSrvr.position.y,
+            ballFromSrvr.position.z
+        )
+        ball.vel = new THREE.Vector3(
+            ballFromSrvr.vel.x,
+            ballFromSrvr.vel.y,
+            ballFromSrvr.vel.z
+        )
+        // console.log(ball)
+    }
+
+    handleUpdatePlayer() {}
 }
