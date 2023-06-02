@@ -1,18 +1,21 @@
 import * as THREE from 'three'
+import grass_jpg from './textures/grass.jpg'
 
-const WIDTH = 100
-const LENGTH = 100
+const WIDTH = 20
+const LENGTH = 40
 
 export class Ground {
     ground
 
     constructor() {
         // TEXTURES
-        const textureLoader = new THREE.TextureLoader()
-        const grass = textureLoader.load('./textures/grass.jpg')
+        const loadingManager = new THREE.LoadingManager()
+        const textureLoader = new THREE.TextureLoader(loadingManager)
+        const grass = textureLoader.load(grass_jpg)
+
         grass.wrapS = THREE.RepeatWrapping
         grass.wrapT = THREE.RepeatWrapping
-        grass.repeat.set(25, 25)
+        grass.repeat.set(15, 15)
 
         const geometry = new THREE.PlaneGeometry(WIDTH, LENGTH, 512, 512)
 

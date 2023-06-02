@@ -131,11 +131,6 @@ export class Ball {
     }
 
     update(ballMap) {
-        this._update(ballMap)
-        // this.gameClient.updateBall(this.uuid, this.mesh.position)
-    }
-
-    _update(ballMap) {
         if (this.mesh.position.y < this.r) {
             this.mesh.position.y = this.r
             if (Math.abs(this.vel.y) < 0.5) {
@@ -242,8 +237,6 @@ export class Ball {
         const v1Minusv2 = this.vel.clone().sub(ball.vel)
         const v2Minusv1 = v1Minusv2.clone().negate()
 
-        // console.log(x2Minusx1)
-
         if (!this.grabbed)
             this.vel.sub(
                 x1Minusx2
@@ -278,5 +271,10 @@ export class Ball {
 
         this.mesh.position.set(newThisPos.x, newThisPos.y, newThisPos.z)
         ball.mesh.position.set(newBallPos.x, newBallPos.y, newBallPos.z)
+    }
+
+    updateBallFromGameClient(position, vel) {
+        this.mesh.position.set(position.x, position.y, position.z)
+        this.vel = new THREE.Vector3(vel.x, vel.y, vel.z)
     }
 }

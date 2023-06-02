@@ -1,5 +1,7 @@
 import { io } from 'socket.io-client'
 import { Ball } from './ball'
+import { PlayableCharacter } from './playableCharacter'
+import { NonPlayableCharacter } from './nonPlayableCharacter'
 import * as THREE from 'three'
 
 export class GameClient {
@@ -7,15 +9,29 @@ export class GameClient {
     ballMap
     playerMap
     setupScene
+    gameState
+    renderer
+    setupSceneArgs
 
-    constructor({ setupScene: setupScene }) {
-        this.socket = io('http://localhost:3000/')
+    constructor({
+        setupScene: setupScene,
+        setupSceneArgs: setupSceneArgs,
+        gameState: gameState,
+    }) {
+        this.socket = io('http://localhost:4000/')
         this.ballMap = new Map()
         this.playerMap = new Map()
+
         this.setupScene = setupScene
+        this.setupSceneArgs = setupSceneArgs
+        this.gameState = gameState
+
+        console.log(gameState)
     }
 
     setup() {
+        console.log('2')
+
         this.socket.addEventListener('open', () => {
             // send a message to the server
             this.socket.send(
@@ -32,21 +48,26 @@ export class GameClient {
 
             switch (packet.type) {
                 case 'updatePlayer':
-                    // ...
+                    this.handleUpdatePlayer(packet.content)
                     break
                 case 'updateBall':
                     this.handleUpdateBall(packet.content)
                     break
-                case 'initBallMap':
-                    this.handleInitBallMap(packet.content)
-
-                    this.setupScene(this.ballMap, this.playerMap)
+                case 'init':
+                    this.setupScene(
+                        packet.content.ballMap,
+                        packet.content.playerMap,
+                        this,
+                        this.gameState,
+                        this.setupSceneArgs
+                    )
                     break
             }
         })
     }
 
     updatePlayer(position) {
+        console.log('Sent updatePlayer')
         this.socket.send(
             JSON.stringify({
                 type: 'updatePlayer',
@@ -70,42 +91,19 @@ export class GameClient {
         )
     }
 
-    handleInitBallMap(ballMapFromSrvr) {
-        const map = new Map(Object.entries(ballMapFromSrvr))
-        map.forEach((ball, uuid) => {
-            this.ballMap.set(
-                uuid,
-                new Ball({
-                    position: new THREE.Vector3(
-                        ball.position.x,
-                        ball.position.y,
-                        ball.position.z
-                    ),
-                    vel: new THREE.Vector3(ball.vel.x, ball.vel.y, ball.vel.z),
-                    uuid: ball.uuid,
-                    gameClient: this,
-                })
-            )
-        })
-    }
-
-    handleInitPlayerMap() {}
-
     handleUpdateBall(ballFromSrvr) {
-        const ball = this.ballMap.get(ballFromSrvr.uuid.toString())
-
-        ball.mesh.position.set(
-            ballFromSrvr.position.x,
-            ballFromSrvr.position.y,
-            ballFromSrvr.position.z
-        )
-        ball.vel = new THREE.Vector3(
-            ballFromSrvr.vel.x,
-            ballFromSrvr.vel.y,
-            ballFromSrvr.vel.z
-        )
-        // console.log(ball)
+        const ball = this.gameState.ballMap.get(ballFromSrvr.uuid)
+        ball.updateBallFromGameClient(ballFromSrvr.position, ballFromSrvr.vel)
     }
 
-    handleUpdatePlayer() {}
+    handleUpdatePlayer(playerFromSrvr) {
+        console.log(
+            'handleUpdatePlayer',
+            playerFromSrvr,
+            this.gameState,
+            playerFromSrvr.uuid
+        )
+        const player = this.gameState.playerMap.get(playerFromSrvr.uuid)
+        player.updatePlayerFromGameClient(playerFromSrvr.position)
+    }
 }

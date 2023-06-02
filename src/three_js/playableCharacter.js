@@ -1,14 +1,14 @@
 import * as THREE from 'three'
 import { A, D, DIRECTIONS, S, SHIFT, W, SPACE } from './utils'
 import { g } from './ball'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { height } from './nonPlayableCharacter'
 
 const dt = 0.015
+const eyeLevel = 1.7
 
-export class Character {
-    model
-    mixer
-    animationsMap = new Map() // Walk, Run, Idle
+export class PlayableCharacter {
+    uuid
+
     orbitControl
     camera
 
@@ -35,30 +35,13 @@ export class Character {
 
     keysPressed
 
-    constructor(orbitControl, camera, gameClient, scene) {
-        const _this = this
-        new GLTFLoader().load('models/Soldier.glb', function (gltf) {
-            _this.model = gltf.scene
-            _this.model.traverse(function (object) {
-                if (object.isMesh) object.castShadow = true
-            })
-
-            _this.mixer = new THREE.AnimationMixer(_this.model)
-            _this.animationsMap = new Map()
-            gltf.animations
-                .filter((a) => a.name != 'TPose')
-                .forEach((a) => {
-                    _this.animationsMap.set(a.name, _this.mixer.clipAction(a))
-                })
-            _this.animationsMap.forEach((value, key) => {
-                if (key == _this.currentAction) {
-                    value.play()
-                }
-            })
-
-            _this.addMeshToScene(scene)
-        })
-
+    constructor({
+        uuid: uuid,
+        orbitControl: orbitControl,
+        camera: camera,
+        gameClient: gameClient,
+    }) {
+        this.uuid = uuid
         this.orbitControl = orbitControl
         this.camera = camera
         this.gameClient = gameClient
@@ -66,7 +49,7 @@ export class Character {
     }
 
     addMeshToScene(scene) {
-        scene.add(this.model)
+        scene.add(this.mesh)
     }
 
     addKeyEventListeners() {
@@ -123,21 +106,20 @@ export class Character {
 
         const acc = new THREE.Vector3()
 
-        if (this.camera.position.y <= 1.7) {
-            this.vel.y = 0
-        }
+        if (this.camera.position.y <= eyeLevel) this.vel.y = 0
 
-        if (this.camera.position.y > 1.7) {
+        if (this.camera.position.y > eyeLevel) {
             acc.y = -g
             this.vel.add(acc.clone().multiplyScalar(dt))
-            this.updateCameraTarget()
+            this.updateCameraTarget(true)
         } else if (this.currentAction == 'Idle') {
             this.vel = new THREE.Vector3()
             if (this.keysPressed[SPACE]) {
                 this.vel.y = this.jumpSpeed
+                this.updateCameraTarget(true)
+            } else {
+                this.updateCameraTarget(false)
             }
-            this.vel.add(acc.clone().multiplyScalar(dt))
-            this.updateCameraTarget()
         } else {
             if (this.currentAction == 'Run' || this.currentAction == 'Walk') {
                 // diagonal movement angle offset
@@ -166,18 +148,22 @@ export class Character {
             }
 
             this.vel.add(acc.clone().multiplyScalar(dt))
-            this.updateCameraTarget()
+            this.updateCameraTarget(true)
         }
     }
 
-    updateCameraTarget() {
+    updateCameraTarget(sentUpdate) {
         // move camera
         this.camera.position.x += this.vel.x * dt
         this.camera.position.y += this.vel.y * dt
         this.camera.position.z += this.vel.z * dt
 
-        if (this.gameClient) {
-            this.gameClient.updatePlayer(this.camera.position)
+        if (sentUpdate && this.gameClient) {
+            this.gameClient.updatePlayer(
+                this.camera.position
+                    .clone()
+                    .add(new THREE.Vector3(0, -eyeLevel + height / 2, 0))
+            )
         }
     }
 
