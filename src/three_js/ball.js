@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { court_length, court_width } from './ground'
 
 const dt = 0.015
 // const dt = 0.0015 * 2
@@ -61,35 +62,39 @@ export class Ball {
         scene.add(this.mesh)
     }
 
-    // throw() {}
+    collideSurface(normal) {
+        const vel_perp = this.vel.clone().projectOnVector(normal)
+        const vel_par = this.vel.clone().sub(vel_perp)
+        const ang_vel_perp = this.ang_vel.clone().projectOnVector(normal)
+        const ang_vel_par = this.ang_vel.clone().sub(ang_vel_perp)
 
-    collideGround() {
-        const vel_zx = new THREE.Vector3(this.vel.x, 0, this.vel.z)
-        const ang_vel_zx = new THREE.Vector3(this.ang_vel.x, 0, this.ang_vel.z)
-
-        const new_vel = vel_zx
+        const new_vel_par = vel_par
             .clone()
             .multiplyScalar((1 - this.alpha * e_horiz) / (1 + this.alpha))
             .add(
-                ang_vel_zx
+                ang_vel_par
                     .clone()
-                    .applyAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2)
+                    .applyAxisAngle(normal, -Math.PI / 2)
                     .multiplyScalar(
                         (this.alpha * (1 + e_horiz) * this.r) / (1 + this.alpha)
                     )
             )
-        new_vel.y = -1 * e_y * this.vel.y
+        const new_vel_perp = normal
+            .clone()
+            .multiplyScalar(e_y * vel_perp.length())
+        const new_vel = new_vel_par.clone().add(new_vel_perp)
 
-        const new_ang_vel = ang_vel_zx
+        const new_ang_vel_par = ang_vel_par
             .clone()
             .multiplyScalar((this.alpha - e_horiz) / (1 + this.alpha))
             .add(
-                vel_zx
+                vel_par
                     .clone()
-                    .applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2)
+                    .applyAxisAngle(normal, Math.PI / 2)
                     .multiplyScalar((1 + e_horiz) / ((1 + this.alpha) * this.r))
             )
-        new_ang_vel.y = this.ang_vel.y
+        const new_ang_vel_perp = ang_vel_perp
+        const new_ang_vel = new_ang_vel_par.clone().add(new_ang_vel_perp)
 
         this.vel = new_vel
         this.ang_vel = new_ang_vel
@@ -130,21 +135,51 @@ export class Ball {
         this.mesh.applyQuaternion(delta_angle)
     }
 
+    dragBallToPosition(position) {
+        if (position.y < this.r) position.y = this.r
+
+        if (position.x > court_width / 2 - this.r)
+            position.x = court_width / 2 - this.r
+        else if (position.x < -court_width / 2 + this.r)
+            position.x = -court_width / 2 + this.r
+
+        if (position.z > court_length / 2 - this.r)
+            position.z = court_length / 2 - this.r
+        else if (position.z < -court_length / 2 + this.r)
+            position.z = -court_length / 2 + this.r
+
+        this.mesh.position.set(position.x, position.y, position.z)
+    }
+
     update(ballMap) {
         if (this.mesh.position.y < this.r) {
             this.mesh.position.y = this.r
             if (Math.abs(this.vel.y) < 0.5) {
                 this.vel.y = 0
-
                 this.rollOnGround()
-
                 return
             }
 
-            if (this.grabbed) {
-                return
-            }
-            this.collideGround()
+            this.collideSurface(new THREE.Vector3(0, 1, 0))
+        }
+
+        if (this.mesh.position.x > court_width / 2 - this.r) {
+            this.mesh.position.x = court_width / 2 - this.r
+
+            this.collideSurface(new THREE.Vector3(-1, 0, 0))
+        } else if (this.mesh.position.x < -court_width / 2 + this.r) {
+            this.mesh.position.x = -court_width / 2 + this.r
+
+            this.collideSurface(new THREE.Vector3(1, 0, 0))
+        }
+        if (this.mesh.position.z > court_length / 2 - this.r) {
+            this.mesh.position.z = court_length / 2 - this.r
+
+            this.collideSurface(new THREE.Vector3(0, 0, -1))
+        } else if (this.mesh.position.z < -court_length / 2 + this.r) {
+            this.mesh.position.z = -court_length / 2 + this.r
+
+            this.collideSurface(new THREE.Vector3(0, 0, 1))
         }
 
         ballMap.forEach((ball, _) => {

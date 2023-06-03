@@ -26,8 +26,6 @@ export default class Canvas {
         this.renderer.setPixelRatio(window.devicePixelRatio)
         this.renderer.shadowMap.enabled = true
 
-        console.log('uhh')
-
         // this.scene = new THREE.Scene()
         // this.renderer = new THREE.WebGLRenderer({
         //     canvas: canvasRef,
@@ -207,24 +205,4 @@ export default class Canvas {
         })
         this.gameClient.setup()
     }
-
-    // ******************* PUBLIC EVENTS ******************* //
-    updateValue(value) {
-        // Whatever you need to do with React props
-    }
-
-    onMouseMove() {
-        // Mouse moves
-    }
-
-    onWindowResize(vpW, vpH) {
-        this.renderer.setSize(vpW, vpH)
-    }
-
-    // // ******************* RENDER LOOP ******************* //
-    // update(t) {
-    //     this.renderer.render(this.scene, this.camera)
-
-    //     requestAnimationFrame(this.update.bind(this))
-    // }
 }

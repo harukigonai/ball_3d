@@ -1,11 +1,11 @@
 import * as THREE from 'three'
 import grass_jpg from './textures/grass.jpg'
 
-const WIDTH = 20
-const LENGTH = 40
+export const court_width = 30
+export const court_length = 60
 
 export class Ground {
-    ground
+    mesh
 
     constructor() {
         // TEXTURES
@@ -17,7 +17,12 @@ export class Ground {
         grass.wrapT = THREE.RepeatWrapping
         grass.repeat.set(15, 15)
 
-        const geometry = new THREE.PlaneGeometry(WIDTH, LENGTH, 512, 512)
+        const geometry = new THREE.PlaneGeometry(
+            court_width,
+            court_length,
+            512,
+            512
+        )
 
         const material = new THREE.MeshLambertMaterial({
             map: grass,

@@ -1,7 +1,8 @@
 import * as THREE from 'three'
 import { A, D, DIRECTIONS, S, SHIFT, W, SPACE } from './utils'
 import { g } from './ball'
-import { height } from './nonPlayableCharacter'
+import { player_height, player_radius } from './nonPlayableCharacter'
+import { court_length, court_width } from './ground'
 
 const dt = 0.015
 const eyeLevel = 1.7
@@ -94,15 +95,7 @@ export class PlayableCharacter {
             }
         }
 
-        if (this.currentAction != play) {
-            // const toPlay = this.animationsMap.get(play)
-            // const current = this.animationsMap.get(this.currentAction)
-
-            // current.fadeOut(this.fadeDuration)
-            // toPlay.reset().fadeIn(this.fadeDuration).play()
-
-            this.currentAction = play
-        }
+        if (this.currentAction != play) this.currentAction = play
 
         const acc = new THREE.Vector3()
 
@@ -158,13 +151,22 @@ export class PlayableCharacter {
         this.camera.position.y += this.vel.y * dt
         this.camera.position.z += this.vel.z * dt
 
-        if (sentUpdate && this.gameClient) {
+        if (this.camera.position.x > court_width / 2 - player_radius)
+            this.camera.position.x = court_width / 2 - player_radius
+        else if (this.camera.position.x < -court_width / 2 + player_radius)
+            this.camera.position.x = -court_width / 2 + player_radius
+
+        if (this.camera.position.z > court_length / 2 - player_radius)
+            this.camera.position.z = court_length / 2 - player_radius
+        else if (this.camera.position.z < -court_length / 2 + player_radius)
+            this.camera.position.z = -court_length / 2 + player_radius
+
+        if (sentUpdate && this.gameClient)
             this.gameClient.updatePlayer(
                 this.camera.position
                     .clone()
-                    .add(new THREE.Vector3(0, -eyeLevel + height / 2, 0))
+                    .add(new THREE.Vector3(0, -eyeLevel + player_height / 2, 0))
             )
-        }
     }
 
     directionOffset() {
@@ -213,11 +215,7 @@ export class PlayableCharacter {
         newBallPos.multiplyScalar(2)
         newBallPos.add(this.camera.position)
 
-        this.ballGrabbed.mesh.position.set(
-            newBallPos.x,
-            newBallPos.y,
-            newBallPos.z
-        )
+        this.ballGrabbed.dragBallToPosition(newBallPos)
 
         this.gameClient.updateBall(
             this.ballGrabbed.uuid,

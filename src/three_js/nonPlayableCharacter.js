@@ -4,8 +4,8 @@ import { g } from './ball'
 
 const dt = 0.015
 
-const radius = 0.5
-export const height = 2
+export const player_radius = 0.5
+export const player_height = 2
 
 export class NonPlayableCharacter {
     uuid
@@ -45,7 +45,11 @@ export class NonPlayableCharacter {
     }) {
         this.uuid = uuid
 
-        const geometry = new THREE.CylinderGeometry(radius, radius, height)
+        const geometry = new THREE.CylinderGeometry(
+            player_radius,
+            player_radius,
+            player_height
+        )
         const material = new THREE.MeshLambertMaterial({
             color: 0xaaaaaa,
             side: THREE.FrontSide,

@@ -10,23 +10,17 @@ export default function CanvasWrapper() {
         let canvas = canvasRef.current
         canvas = new Canvas(canvas)
 
-        const mouseMove = (event) => {
-            canvas.onMouseMove()
-        }
-
         const handleResize = () => {
             canvas.onWindowResize(window.innerWidth, window.innerHeight)
         }
 
         // Init any event listeners
-        window.addEventListener('mousemove', mouseMove)
         window.addEventListener('resize', handleResize)
 
         socket.emit('ready-to-start-game', '')
 
         return () => {
             // Remove any event listeners
-            window.removeEventListener('mousemove', mouseMove)
             window.removeEventListener('resize', handleResize)
         }
     }, [])
