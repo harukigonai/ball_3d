@@ -3,6 +3,7 @@ import { Ball } from './ball'
 import { PlayableCharacter } from './playableCharacter'
 import { NonPlayableCharacter } from './nonPlayableCharacter'
 import * as THREE from 'three'
+import { socket } from '../socket'
 
 export class GameClient {
     socket
@@ -18,75 +19,62 @@ export class GameClient {
         setupSceneArgs: setupSceneArgs,
         gameState: gameState,
     }) {
-        this.socket = io('http://localhost:4000/')
         this.ballMap = new Map()
         this.playerMap = new Map()
 
         this.setupScene = setupScene
         this.setupSceneArgs = setupSceneArgs
         this.gameState = gameState
-
-        console.log(gameState)
     }
 
     setup() {
-        console.log('2')
+        // receive a message from the server
+        socket.on('init', (data) => {
+            const packet = JSON.parse(data)
 
-        this.socket.addEventListener('open', () => {
-            // send a message to the server
-            this.socket.send(
-                JSON.stringify({
-                    type: 'hello from client',
-                    content: [3, '4'],
-                })
+            this.setupScene(
+                packet.ballMap,
+                packet.playerMap,
+                this,
+                this.gameState,
+                this.setupSceneArgs
             )
+
+            console.log('Completed init')
+            console.log(packet)
         })
 
         // receive a message from the server
-        this.socket.addEventListener('message', (data) => {
+        socket.on('updatePlayer', (data) => {
             const packet = JSON.parse(data)
 
-            switch (packet.type) {
-                case 'updatePlayer':
-                    this.handleUpdatePlayer(packet.content)
-                    break
-                case 'updateBall':
-                    this.handleUpdateBall(packet.content)
-                    break
-                case 'init':
-                    this.setupScene(
-                        packet.content.ballMap,
-                        packet.content.playerMap,
-                        this,
-                        this.gameState,
-                        this.setupSceneArgs
-                    )
-                    break
-            }
+            this.handleUpdatePlayer(packet)
+        })
+
+        // receive a message from the server
+        socket.on('updateBall', (data) => {
+            const packet = JSON.parse(data)
+
+            this.handleUpdateBall(packet)
         })
     }
 
     updatePlayer(position) {
-        console.log('Sent updatePlayer')
-        this.socket.send(
+        socket.emit(
+            'updatePlayer',
             JSON.stringify({
-                type: 'updatePlayer',
-                content: {
-                    position: position,
-                },
+                position: position,
             })
         )
     }
 
     updateBall(uuid, position, vel) {
-        this.socket.send(
+        socket.emit(
+            'updateBall',
             JSON.stringify({
-                type: 'updateBall',
-                content: {
-                    uuid: uuid,
-                    position: position,
-                    vel: vel,
-                },
+                uuid: uuid,
+                position: position,
+                vel: vel,
             })
         )
     }
@@ -97,12 +85,6 @@ export class GameClient {
     }
 
     handleUpdatePlayer(playerFromSrvr) {
-        console.log(
-            'handleUpdatePlayer',
-            playerFromSrvr,
-            this.gameState,
-            playerFromSrvr.uuid
-        )
         const player = this.gameState.playerMap.get(playerFromSrvr.uuid)
         player.updatePlayerFromGameClient(playerFromSrvr.position)
     }

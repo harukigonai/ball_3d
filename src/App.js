@@ -1,15 +1,27 @@
 import logo from './logo.svg'
 import './App.css'
-import Home from './Home'
-import CanvasWrapper from './CanvasWrapper'
-import TeamSelection from './TeamSelection'
-
-import React from 'react'
-
-import { useState } from 'react'
+import Home from './pages/Home'
+import CanvasWrapper from './pages/CanvasWrapper'
+import EnterName from './pages/EnterName'
+import TeamSelection from './pages/TeamSelection'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import React, { useState } from 'react'
 
 export default function App() {
     const [page, setPage] = useState('home')
 
-    return <div className="app">{page == 'home' && <Home />}</div>
+    const homeButtonOnClick = (e) => {
+        setPage('teamSelection')
+    }
+
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/enter-name" element={<EnterName />} />
+                <Route path="/team-selection" element={<TeamSelection />} />
+                <Route path="/play" element={<CanvasWrapper />} />
+            </Routes>
+        </BrowserRouter>
+    )
 }

@@ -1,4 +1,5 @@
 * {
+    font-family: 'Source Code Pro', monospace;
     margin: 0;
 }
 
@@ -6,6 +7,28 @@ html,
 body {
     width: 100%;
     height: 100%;
+}
+
+button {
+    text-decoration: none !important;
+    border-radius: 4px;
+
+    border: none;
+
+    padding: 0;
+
+    box-shadow: 0 1px 3px rgba(23, 23, 23, 0.24);
+
+    box-sizing: border-box;
+
+    font-weight: 600;
+    font-size: 14px;
+
+    cursor: pointer;
+}
+
+button:hover {
+    border: 1px solid #5f6368;
 }
 
 #root {
@@ -36,14 +59,11 @@ body {
     transform: translate(-50%, -50%);
 
     width: fit-content;
-
-    display: flex;
 }
 
 .home-title {
     margin: 0;
 
-    font-family: 'Source Code Pro', monospace;
     font-weight: 800;
     font-size: 80px;
 
@@ -51,15 +71,208 @@ body {
 
     width: fit-content;
 
+    display: block;
+}
+
+.home-button-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.home-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    height: 30px;
+    width: 93px;
+
+    align-items: center;
+
+    background-color: white;
+}
+
+.home-button-text {
+    font-weight: 600;
+    font-size: 14px;
+
+    color: grey;
+}
+
+.enter-name-input-and-button {
+    margin: 0;
+
     position: relative;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
 
+    width: 170px;
+}
+
+.enter-name-input {
+    width: 100%;
+
+    margin: 0 0 10px 0;
+    padding: 5px;
+
+    box-sizing: border-box;
+    border-radius: 4px;
+    border: none;
+
+    font-weight: 500;
+    font-size: 14px;
+
+    color: grey;
+
     display: block;
 }
 
-.home-button {
+.enter-name-input:focus {
+    outline: none;
+}
+
+.enter-name-button-wrapper {
+    width: 100%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.enter-name-button {
+    text-decoration: none !important;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    height: 30px;
+    width: 100%;
+
+    border-radius: 4px;
+
     align-items: center;
     padding: 0;
+
+    box-shadow: 0 1px 3px rgba(23, 23, 23, 0.24);
+
+    box-sizing: border-box;
+
+    background-color: white;
+}
+
+.enter-name-button:hover {
+    border: 1px solid #5f6368;
+}
+
+.enter-name-button-disabled {
+    cursor: default;
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.team-selection-content {
+    margin: 0;
+
+    position: relative;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    height: 300px;
+    width: 300px;
+}
+
+.team-selection-message {
+    font-size: 15px;
+
+    margin-bottom: 5px;
+}
+
+.team-selection-column {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+.team-selection-columns {
+    margin: 0;
+
+    height: 300px;
+    width: 300px;
+
+    display: flex;
+    gap: 20px;
+}
+
+.team-selection-red-team-button {
+    color: white;
+
+    background-color: red;
+
+    height: 30px;
+    width: 100%;
+}
+
+.team-selection-blue-team-button {
+    color: white;
+
+    background-color: blue;
+
+    height: 30px;
+    width: 100%;
+}
+
+.team-selection-username {
+    height: 30px;
+    width: 100%;
+
+    background-color: white;
+
+    border-radius: 4px;
+
+    display: flex;
+    align-items: center;
+    padding-left: 4px;
+
+    box-sizing: border-box;
+
+    position: relative;
+}
+
+.team-selection-user-ready {
+    position: absolute;
+
+    width: 15px;
+    height: 15px;
+
+    right: 10px;
+}
+
+.team-selection-confirm-button {
+    right: 10px;
+    bottom: 10px;
+
+    position: absolute;
+
+    height: 30px;
+    width: 120px;
+}
+
+.team-selection-confirm-button-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 5px;
+}
+
+.team-selection-confirm-button-content svg {
+    width: 15px;
+    height: 15px;
 }

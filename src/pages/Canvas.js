@@ -1,12 +1,12 @@
 import * as THREE from 'three'
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js'
-import { Sky } from './three_js/sky'
-import { GameClient } from './three_js/gameClient'
-import { Ball } from './three_js/ball'
-import { PlayableCharacter } from './three_js/playableCharacter'
-import { NonPlayableCharacter } from './three_js/nonPlayableCharacter'
-import { Ground } from './three_js/ground'
-import { GameState } from './three_js/gameState'
+import { Sky } from '../three_js/sky'
+import { GameClient } from '../three_js/gameClient'
+import { Ball } from '../three_js/ball'
+import { PlayableCharacter } from '../three_js/playableCharacter'
+import { NonPlayableCharacter } from '../three_js/nonPlayableCharacter'
+import { Ground } from '../three_js/ground'
+import { GameState } from '../three_js/gameState'
 
 export default class Canvas {
     canvasRef
