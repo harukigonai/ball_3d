@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { socket } from '../socket.js'
 import { ReactComponent as GreenCheckmark } from '../svgs/green_checkmark.svg'
-import { useNavigate } from 'react-router-dom'
 
 export default function TeamSelection({ ready, setReady, setTeam }) {
     const [redTeam, setRedTeam] = useState([])
@@ -30,7 +30,7 @@ export default function TeamSelection({ ready, setReady, setTeam }) {
             socket.off('team-selection-info', teamSelectionInfo)
             socket.off('start-game', startGame)
         }
-    }, [])
+    }, [navigate])
 
     const selectRedTeam = () => {
         socket.emit('select-team', JSON.stringify({ team: 'red' }))
@@ -51,7 +51,7 @@ export default function TeamSelection({ ready, setReady, setTeam }) {
     return (
         <div className="home-background">
             <div className="team-selection-content">
-                {unselectedTeam.length != 0 ? (
+                {unselectedTeam.length !== 0 ? (
                     <p className="team-selection-message">{`${unselectedTeam.length} player(s) have not chosen a team.`}</p>
                 ) : (
                     <></>
@@ -64,7 +64,7 @@ export default function TeamSelection({ ready, setReady, setTeam }) {
                         >
                             Red Team
                         </button>
-                        {redTeam.map(({ username: username, ready: ready }) => (
+                        {redTeam.map(({ username, ready }) => (
                             <div className="team-selection-username">
                                 {username}
                                 {ready ? (
@@ -82,16 +82,14 @@ export default function TeamSelection({ ready, setReady, setTeam }) {
                         >
                             Blue Team
                         </button>
-                        {blueTeam.map(
-                            ({ username: username, ready: ready }) => (
-                                <div className="team-selection-username">
-                                    {username}
-                                    {ready && (
-                                        <GreenCheckmark className="team-selection-user-ready" />
-                                    )}
-                                </div>
-                            )
-                        )}
+                        {blueTeam.map(({ username, ready }) => (
+                            <div className="team-selection-username">
+                                {username}
+                                {ready && (
+                                    <GreenCheckmark className="team-selection-user-ready" />
+                                )}
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>

@@ -3,23 +3,23 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { Sky } from '../three_js/sky'
 import { GameClient } from '../three_js/gameClient'
 import { Ball } from '../three_js/ball'
-import { PlayableCharacter } from '../three_js/playableCharacter'
+import { PlayableCharacter, eyeLevel } from '../three_js/playableCharacter'
 import {
     NonPlayableCharacter,
     player_height,
 } from '../three_js/nonPlayableCharacter'
 import { Ground } from '../three_js/ground'
 import { GameState } from '../three_js/gameState'
-import { eyeLevel } from '../three_js/playableCharacter'
 
 export default class Canvas {
     canvasRef
+
     gameState
+
     renderer
 
     constructor(canvasRef, setResult, exitToHomePage) {
         this.canvasRef = canvasRef
-        console.log(this.canvasRef)
         this.gameState = new GameState()
 
         // Renderer
@@ -27,7 +27,6 @@ export default class Canvas {
             canvas: this.canvasRef,
             antialias: true,
         })
-        console.log(window.innerWidth, window.innerHeight)
         this.renderer.setSize(window.innerWidth, window.innerHeight)
         this.renderer.setPixelRatio(window.devicePixelRatio)
         this.renderer.shadowMap.enabled = true
@@ -37,24 +36,12 @@ export default class Canvas {
         this.connectToGameServer()
     }
 
-    onWindowResize(vpW, vpH) {
-        console.log(vpW, vpH)
-        this.renderer.setSize(vpW, vpH)
-        // this.canvasRef.style.width = vpW
-        // this.canvasRef.style.height = vpH
-        // console.log(this.canvasRef.style)
-    }
-
     setupScene(
         ballMapData,
         playerMapData,
         gameClient,
         gameState,
-        {
-            renderer: renderer,
-            constructBallMap: constructBallMap,
-            constructPlayerMap: constructPlayerMap,
-        }
+        { renderer, constructBallMap, constructPlayerMap }
     ) {
         // Camera
         const camera = new THREE.PerspectiveCamera(
@@ -69,8 +56,7 @@ export default class Canvas {
             camera.aspect = window.innerWidth / window.innerHeight
             camera.updateProjectionMatrix()
 
-            // console.log(renderer.domElement.width)
-            // renderer.setSize(window.innerWidth, window.innerHeight)
+            renderer.setSize(window.innerWidth, window.innerHeight)
         })
 
         // OrbitControls
@@ -79,38 +65,50 @@ export default class Canvas {
             renderer.domElement
         )
 
-        renderer.domElement.addEventListener('click', function () {
+        renderer.domElement.addEventListener('click', () => {
             orbitControls.lock()
-        })
-
-        let mousePressed = false
-        renderer.domElement.addEventListener('pointerdown', function () {
-            mousePressed = true
-        })
-        renderer.domElement.addEventListener('pointerup', function () {
-            mousePressed = false
         })
 
         // Setup scene
         const scene = new THREE.Scene()
         scene.background = new THREE.Color(0xa8def0)
 
-        gameState.ballMap = constructBallMap(ballMapData, gameClient, scene)
+        const listener = new THREE.AudioListener()
+        camera.add(listener)
+
+        gameState.ballMap = constructBallMap(
+            ballMapData,
+            gameClient,
+            scene,
+            listener
+        )
 
         gameState.playerMap = constructPlayerMap(
             playerMapData,
             orbitControls,
             camera,
             gameClient,
-            scene
+            scene,
+            listener
         )
 
         gameState.ballMap.forEach((ball, _) => ball.addMeshToScene())
 
+        let me
+        let meLive = true
         gameState.playerMap.forEach((player, _) => {
             if (player instanceof NonPlayableCharacter) player.addMeshToScene()
-            else if (player instanceof PlayableCharacter)
+            else if (player instanceof PlayableCharacter) {
                 player.addKeyEventListeners()
+                renderer.domElement.addEventListener('pointerdown', (e) => {
+                    player.mousePressed = true
+                    player.whichMousePressed = e.which
+                })
+                renderer.domElement.addEventListener('pointerup', () => {
+                    player.mousePressed = false
+                })
+                me = player
+            }
         })
 
         const ground = new Ground({ scene })
@@ -121,20 +119,22 @@ export default class Canvas {
 
         const clock = new THREE.Clock()
         const animate = () => {
-            let mixerUpdateDelta = clock.getDelta()
+            const mixerUpdateDelta = clock.getDelta()
 
             gameState.playerMap.forEach((player, _) => {
-                if (player instanceof PlayableCharacter)
-                    player.update(
-                        mixerUpdateDelta,
-                        mousePressed,
-                        gameState.ballMap
-                    )
+                if (player instanceof PlayableCharacter) {
+                    player.update(mixerUpdateDelta, gameState.ballMap)
+                }
             })
 
             gameState.ballMap.forEach((ball, _) =>
                 ball.update(gameState.ballMap, gameState.playerMap)
             )
+
+            if (meLive && !me.live) {
+                this.setResult('Out')
+                meLive = false
+            }
 
             if (sky) sky.update()
 
@@ -146,11 +146,11 @@ export default class Canvas {
         animate()
     }
 
-    constructBallMap(ballMapFromSrvr, gameClient, scene) {
+    constructBallMap(ballMapFromSrvr, gameClient, scene, listener) {
         const map = new Map(Object.entries(ballMapFromSrvr))
         const ballMap = new Map()
 
-        map.forEach(({ position: position, vel: vel, uuid: uuid }, _) => {
+        map.forEach(({ position, vel, uuid }, _) => {
             ballMap.set(
                 uuid,
                 new Ball({
@@ -160,9 +160,10 @@ export default class Canvas {
                         position.z
                     ),
                     vel: new THREE.Vector3(vel.x, vel.y, vel.z),
-                    uuid: uuid,
-                    gameClient: gameClient,
-                    scene: scene,
+                    uuid,
+                    gameClient,
+                    scene,
+                    listener,
                 })
             )
         })
@@ -175,22 +176,13 @@ export default class Canvas {
         orbitControls,
         camera,
         gameClient,
-        scene
+        scene,
+        listener
     ) {
         const map = new Map(Object.entries(playerMapFromSrvr))
         const playerMap = new Map()
         map.forEach(
-            (
-                {
-                    playable: playable,
-                    uuid: uuid,
-                    position: position,
-                    vel: vel,
-                    team: team,
-                    facing: facing,
-                },
-                _
-            ) => {
+            ({ playable, uuid, position, vel, team, facing, name }, _) => {
                 if (playable) {
                     camera.position.x = position.x
                     camera.position.y =
@@ -205,14 +197,15 @@ export default class Canvas {
                     playerMap.set(
                         uuid,
                         new PlayableCharacter({
-                            orbitControls: orbitControls,
-                            camera: camera,
-                            gameClient: gameClient,
-                            team: team,
-                            playerMap: playerMap,
+                            orbitControls,
+                            camera,
+                            gameClient,
+                            team,
+                            playerMap,
+                            listener,
                         })
                     )
-                } else
+                } else {
                     playerMap.set(
                         uuid,
                         new NonPlayableCharacter({
@@ -221,11 +214,13 @@ export default class Canvas {
                                 position.y,
                                 position.z
                             ),
-                            uuid: uuid,
-                            team: team,
-                            scene: scene,
+                            uuid,
+                            team,
+                            scene,
+                            name,
                         })
                     )
+                }
             }
         )
         return playerMap

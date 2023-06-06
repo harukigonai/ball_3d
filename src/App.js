@@ -1,13 +1,11 @@
-import logo from './logo.svg'
 import './App.css'
 import Home from './pages/Home'
 import CanvasWrapper from './pages/CanvasWrapper'
 import EnterName from './pages/EnterName'
 import TeamSelection from './pages/TeamSelection'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import React, { useEffect, useState } from 'react'
 import { socket } from './socket'
-import { useNavigate } from 'react-router-dom'
 
 function Root() {
     const navigate = useNavigate()
@@ -29,7 +27,7 @@ function Root() {
         socket.on('return-to-select-team', (data) =>
             navigate('/team-selection')
         )
-    }, [])
+    }, [navigate])
 
     return (
         <Routes>

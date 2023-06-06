@@ -3,7 +3,8 @@ import { A, D, DIRECTIONS, S, SHIFT, W, SPACE } from './utils'
 import { g } from './ball'
 import { player_height, player_radius } from './nonPlayableCharacter'
 import { court_length, court_width } from './ground'
-import { toHaveDisplayValue } from '@testing-library/jest-dom/matchers'
+import walking_mp3 from './sounds/walking.mp3'
+import running_mp3 from './sounds/running.mp3'
 
 const dt = 0.015
 export const eyeLevel = 1.7
@@ -40,11 +41,12 @@ export class PlayableCharacter {
     playerMap
 
     constructor({
-        orbitControl: orbitControl,
-        camera: camera,
-        gameClient: gameClient,
-        team: team,
-        playerMap: playerMap,
+        orbitControl,
+        camera,
+        gameClient,
+        team,
+        playerMap,
+        listener,
     }) {
         this.orbitControl = orbitControl
         this.camera = camera
@@ -56,6 +58,18 @@ export class PlayableCharacter {
         this.live = true
 
         this.playerMap = playerMap
+        this.listener = listener
+
+        this.walking_sound = new THREE.Audio(this.listener)
+        const audioLoader = new THREE.AudioLoader()
+        audioLoader.load(walking_mp3, (buffer) => {
+            this.walking_sound.setBuffer(buffer)
+        })
+
+        this.running_sound = new THREE.Audio(this.listener)
+        audioLoader.load(running_mp3, (buffer) => {
+            this.running_sound.setBuffer(buffer)
+        })
     }
 
     addKeyEventListeners() {
@@ -73,7 +87,7 @@ export class PlayableCharacter {
 
     collidePlayer() {
         this.playerMap.forEach((player, _) => {
-            if (player != this && player.live && this.live) {
+            if (player !== this && player.live && this.live) {
                 const thisPosXZ = new THREE.Vector3(
                     this.camera.position.x,
                     0,
@@ -94,19 +108,20 @@ export class PlayableCharacter {
                     const velTowardPlayer = this.vel
                         .clone()
                         .projectOnVector(towardPlayerNorm)
-                    if (towardPlayerNorm.dot(velTowardPlayer) > 0)
+                    if (towardPlayerNorm.dot(velTowardPlayer) > 0) {
                         this.vel = this.vel.clone().sub(velTowardPlayer)
+                    }
                 }
             }
         })
     }
 
-    update(delta, mousePressed, ballMap) {
+    update(delta, ballMap) {
         const directionPressed = DIRECTIONS.some(
-            (key) => this.keysPressed[key] == true
+            (key) => this.keysPressed[key] === true
         )
 
-        var play = ''
+        let play = ''
         if (directionPressed && this.keysPressed[SHIFT]) {
             play = 'Run'
         } else if (directionPressed) {
@@ -116,28 +131,24 @@ export class PlayableCharacter {
         }
 
         if (this.live) {
-            if (mousePressed) {
+            if (this.mousePressed) {
                 if (this.ballGrabbed) {
                     this.dragBallToCamera()
                 } else {
                     this.tryGrabBall(ballMap)
                 }
-            } else {
-                if (this.ballGrabbed) {
-                    this.throwBall()
+            } else if (this.ballGrabbed) {
+                this.throwBall()
 
-                    this.ballGrabbed.grabbed = false
-                    this.ballGrabbed = null
-                }
-            }
-        } else {
-            if (this.ballGrabbed) {
                 this.ballGrabbed.grabbed = false
                 this.ballGrabbed = null
             }
+        } else if (this.ballGrabbed) {
+            this.ballGrabbed.grabbed = false
+            this.ballGrabbed = null
         }
 
-        if (this.currentAction != play) this.currentAction = play
+        if (this.currentAction !== play) this.currentAction = play
 
         const acc = new THREE.Vector3()
 
@@ -147,7 +158,9 @@ export class PlayableCharacter {
             acc.y = -g
             this.vel.add(acc.clone().multiplyScalar(dt))
             this.updateCameraTarget(true)
-        } else if (this.currentAction == 'Idle') {
+            if (this.walking_sound.isPlaying) this.walking_sound.stop()
+            if (this.running_sound.isPlaying) this.running_sound.stop()
+        } else if (this.currentAction === 'Idle') {
             this.vel = new THREE.Vector3()
             if (this.keysPressed[SPACE]) {
                 this.vel.y = this.jumpSpeed
@@ -155,10 +168,12 @@ export class PlayableCharacter {
             } else {
                 this.updateCameraTarget(false)
             }
+            if (this.walking_sound.isPlaying) this.walking_sound.stop()
+            if (this.running_sound.isPlaying) this.running_sound.stop()
         } else {
-            if (this.currentAction == 'Run' || this.currentAction == 'Walk') {
+            if (this.currentAction === 'Run' || this.currentAction === 'Walk') {
                 // diagonal movement angle offset
-                var directionOffset = this.directionOffset(this.keysPressed)
+                let directionOffset = this.directionOffset(this.keysPressed)
 
                 // calculate direction
                 this.camera.getWorldDirection(this.walkDirection)
@@ -170,12 +185,20 @@ export class PlayableCharacter {
                 )
 
                 // run/walk velocity
-                const velocity =
-                    this.currentAction == 'Run' ? this.runSpeed : this.walkSpeed
+                let speed
+                if (this.currentAction === 'Run') {
+                    speed = this.runSpeed
+                    if (this.walking_sound.isPlaying) this.walking_sound.stop()
+                    if (!this.running_sound.isPlaying) this.running_sound.play()
+                } else {
+                    speed = this.walkSpeed
+                    if (this.running_sound.isPlaying) this.running_sound.stop()
+                    if (!this.walking_sound.isPlaying) this.walking_sound.play()
+                }
 
                 // move model & camera
-                this.vel.x = this.walkDirection.x * velocity
-                this.vel.z = this.walkDirection.z * velocity
+                this.vel.x = this.walkDirection.x * speed
+                this.vel.z = this.walkDirection.z * speed
 
                 this.collidePlayer()
             }
@@ -200,33 +223,46 @@ export class PlayableCharacter {
         else if (this.camera.position.x < -court_width / 2 + player_radius)
             this.camera.position.x = -court_width / 2 + player_radius
 
-        if (this.team == 'red') {
-            // Red can walk around in z: [-court_length / 2, 0]
-            if (this.camera.position.z > 0 - player_radius)
-                this.camera.position.z = 0 - player_radius
-            else if (this.camera.position.z < -court_length / 2 + player_radius)
-                this.camera.position.z = -court_length / 2 + player_radius
-        } else if (this.team == 'blue') {
-            // Red can walk around in z: [0, court_length / 2]
-            if (this.camera.position.z < 0 + player_radius)
-                this.camera.position.z = 0 + player_radius
-            else if (this.camera.position.z > court_length / 2 - player_radius)
-                this.camera.position.z = court_length / 2 - player_radius
-        }
+        if (this.live) {
+            if (this.team === 'red') {
+                // Red can walk around in z: [-court_length / 2, 0]
+                if (this.camera.position.z > 0 - player_radius)
+                    this.camera.position.z = 0 - player_radius
+                else if (
+                    this.camera.position.z <
+                    -court_length / 2 + player_radius
+                )
+                    this.camera.position.z = -court_length / 2 + player_radius
+            } else if (this.team === 'blue') {
+                // Red can walk around in z: [0, court_length / 2]
+                if (this.camera.position.z < 0 + player_radius)
+                    this.camera.position.z = 0 + player_radius
+                else if (
+                    this.camera.position.z >
+                    court_length / 2 - player_radius
+                )
+                    this.camera.position.z = court_length / 2 - player_radius
+            }
+        } else if (this.camera.position.z < -court_length / 2 + player_radius)
+            this.camera.position.z = -court_length / 2 + player_radius
+        else if (this.camera.position.z > court_length / 2 - player_radius)
+            this.camera.position.z = court_length / 2 - player_radius
 
-        if (sentUpdate && this.gameClient && this.live)
+        if (sentUpdate && this.gameClient && this.live) {
             this.gameClient.updatePlayer(
                 this.camera.position
                     .clone()
                     .add(
                         new THREE.Vector3(0, -eyeLevel + player_height / 2, 0)
                     ),
+                this.vel,
                 this.live
             )
+        }
     }
 
     directionOffset() {
-        var directionOffset = 0 // w
+        let directionOffset = 0 // w
 
         if (this.keysPressed[W]) {
             if (this.keysPressed[A]) {
@@ -256,13 +292,29 @@ export class PlayableCharacter {
         this.camera.getWorldDirection(newVel)
         newVel.multiplyScalar(30)
 
-        this.ballGrabbed.vel = newVel
+        if (this.whichMousePressed === 3) {
+            this.ballGrabbed.ang_vel = new THREE.Vector3(
+                0,
+                7.5,
+                0
+            ).applyQuaternion(this.ballGrabbed.mesh.quaternion)
+            const ballUp = new THREE.Vector3(0, 1, 0).applyQuaternion(
+                this.ballGrabbed.mesh.quaternion
+            )
+
+            this.ballGrabbed.vel = newVel
+                .clone()
+                .applyAxisAngle(ballUp, -Math.PI / 6)
+        } else {
+            this.ballGrabbed.vel = newVel
+        }
 
         this.ballGrabbed.live = true
 
         this.gameClient.updateBall(
             this.ballGrabbed.uuid,
             this.ballGrabbed.mesh.position,
+            this.ballGrabbed.mesh.quaternion,
             this.ballGrabbed.vel,
             this.ballGrabbed.ang_vel,
             this.ballGrabbed.live
@@ -277,12 +329,17 @@ export class PlayableCharacter {
 
         this.ballGrabbed.dragBallToPosition(newBallPos)
 
+        const ballQuaternion = new THREE.Quaternion()
+        this.camera.getWorldQuaternion(ballQuaternion)
+        this.ballGrabbed.mesh.setRotationFromQuaternion(ballQuaternion)
+
         this.ballGrabbed.vel = new THREE.Vector3()
         this.ballGrabbed.ang_vel = new THREE.Vector3()
 
         this.gameClient.updateBall(
             this.ballGrabbed.uuid,
             this.ballGrabbed.mesh.position,
+            this.ballGrabbed.mesh.quaternion,
             this.ballGrabbed.vel,
             this.ballGrabbed.ang_vel,
             this.ballGrabbed.live
@@ -293,7 +350,7 @@ export class PlayableCharacter {
         const worldDirection = new THREE.Vector3()
         this.camera.getWorldDirection(worldDirection)
 
-        for (let [_, ball] of ballMap) {
+        for (const [, ball] of ballMap) {
             if (this.ballGrabbed) break
             // Distance from camera to ball must be < 2
             const distCameraToBall = ball.mesh.position.distanceTo(

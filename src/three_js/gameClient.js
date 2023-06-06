@@ -2,21 +2,29 @@ import { socket } from '../socket'
 
 export class GameClient {
     socket
+
     ballMap
+
     playerMap
+
     setupScene
+
     gameState
+
     renderer
+
     setupSceneArgs
+
     initDone
+
     setResult
 
     constructor({
-        setupScene: setupScene,
-        setupSceneArgs: setupSceneArgs,
-        gameState: gameState,
-        setResult: setResult,
-        exitToHomePage: exitToHomePage,
+        setupScene,
+        setupSceneArgs,
+        gameState,
+        setResult,
+        exitToHomePage,
     }) {
         this.ballMap = new Map()
         this.playerMap = new Map()
@@ -73,21 +81,22 @@ export class GameClient {
         socket.emit(
             'updatePlayer',
             JSON.stringify({
-                position: position,
-                live: live,
+                position,
+                live,
             })
         )
     }
 
-    updateBall(uuid, position, vel, ang_vel, live) {
+    updateBall(uuid, position, quaternion, vel, ang_vel, live) {
         socket.emit(
             'updateBall',
             JSON.stringify({
-                uuid: uuid,
-                position: position,
-                vel: vel,
-                ang_vel: ang_vel,
-                live: live,
+                uuid,
+                position,
+                quaternion,
+                vel,
+                ang_vel,
+                live,
             })
         )
     }
@@ -96,6 +105,7 @@ export class GameClient {
         const ball = this.gameState.ballMap.get(ballFromSrvr.uuid)
         ball.updateBallFromGameClient(
             ballFromSrvr.position,
+            ballFromSrvr.quaternion,
             ballFromSrvr.vel,
             ballFromSrvr.ang_vel,
             ballFromSrvr.live
@@ -106,12 +116,13 @@ export class GameClient {
         const player = this.gameState.playerMap.get(playerFromSrvr.uuid)
         player.updatePlayerFromGameClient(
             playerFromSrvr.position,
+            playerFromSrvr.vel,
             playerFromSrvr.live
         )
     }
 
     handleGameOver(resultFromServer) {
-        const result = resultFromServer.result
+        const { result } = resultFromServer
 
         this.setResult(result)
 

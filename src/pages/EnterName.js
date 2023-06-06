@@ -1,11 +1,11 @@
-import React, { Component, useEffect, useState } from 'react'
-import { socket } from '../socket.js'
+import React from 'react'
 import { Link } from 'react-router-dom'
+import { socket } from '../socket.js'
 
 export default function EnterName({ username, setUsername }) {
     const onChangeInput = (e) => setUsername(e.target.value)
     const onClickButton = (e) =>
-        socket.emit('enter-name', JSON.stringify({ username: username }))
+        socket.emit('enter-name', JSON.stringify({ username }))
 
     return (
         <div className="home-background">
@@ -19,10 +19,9 @@ export default function EnterName({ username, setUsername }) {
                 <div className="enter-name-button-wrapper">
                     <Link
                         to="/team-selection"
-                        className={
-                            'enter-name-button ' +
-                            (username == '' ? 'enter-name-button-disabled' : '')
-                        }
+                        className={`enter-name-button ${
+                            username === '' ? 'enter-name-button-disabled' : ''
+                        }`}
                         onClick={onClickButton}
                     >
                         <p className="home-button-text">Next</p>
