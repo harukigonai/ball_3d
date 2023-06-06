@@ -465,8 +465,6 @@ export class Ball {
     }
 
     updateBallFromGameClient(position, quaternion, vel, ang_vel, live) {
-        console.log(position, quaternion, vel, ang_vel, live)
-
         this.mesh.position.set(position.x, position.y, position.z)
         this.mesh.setRotationFromQuaternion(
             new THREE.Quaternion(
