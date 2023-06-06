@@ -7,7 +7,7 @@ export const court_length = 60
 export class Ground {
     mesh
 
-    constructor() {
+    constructor({ scene }) {
         // TEXTURES
         const loadingManager = new THREE.LoadingManager()
         const textureLoader = new THREE.TextureLoader(loadingManager)
@@ -34,9 +34,11 @@ export class Ground {
         this.mesh.receiveShadow = true
         this.mesh.rotation.x = -Math.PI / 2
         this.mesh.position.y = -0.05
+
+        this.scene = scene
     }
 
-    addMeshToScene(scene) {
-        scene.add(this.mesh)
+    addMeshToScene() {
+        this.scene.add(this.mesh)
     }
 }

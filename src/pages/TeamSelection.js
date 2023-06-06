@@ -1,41 +1,17 @@
-import React, { Component, useEffect, useState } from 'react'
-import { io } from 'socket.io-client'
+import React, { useEffect, useState } from 'react'
 import { socket } from '../socket.js'
 import { ReactComponent as GreenCheckmark } from '../svgs/green_checkmark.svg'
 import { useNavigate } from 'react-router-dom'
 
-export default function TeamSelection() {
+export default function TeamSelection({ ready, setReady, setTeam }) {
     const [redTeam, setRedTeam] = useState([])
     const [blueTeam, setBlueTeam] = useState([])
     const [unselectedTeam, setUnselectedTeam] = useState([])
 
-    const [ready, setReady] = useState(false)
-
-    const [isConnected, setIsConnected] = useState(socket.connected)
-
     const navigate = useNavigate()
 
     useEffect(() => {
-        function onConnect() {
-            setIsConnected(true)
-
-            socket.send(
-                JSON.stringify({
-                    type: 'hello from client',
-                    content: [3, '4'],
-                })
-            )
-        }
-
-        function onDisconnect() {
-            setIsConnected(false)
-            console.log('disconnected')
-        }
-
         const teamSelectionInfo = (data) => {
-            console.log('Receiving team-selection-info')
-            console.log(data)
-
             const packet = JSON.parse(data)
 
             setRedTeam(packet.redTeam)
@@ -43,31 +19,28 @@ export default function TeamSelection() {
             setUnselectedTeam(packet.unselectedTeam)
         }
 
-        const startGame = () => {
-            console.log('Received start-game')
-            navigate('/play')
-        }
+        const startGame = () => navigate('/play')
 
-        socket.on('connect', onConnect)
-        socket.on('disconnect', onDisconnect)
         socket.on('team-selection-info', teamSelectionInfo)
         socket.on('start-game', startGame)
 
         socket.emit('request-team-selection-info', {})
 
         return () => {
-            socket.off('connect', onConnect)
-            socket.off('disconnect', onDisconnect)
+            socket.off('team-selection-info', teamSelectionInfo)
+            socket.off('start-game', startGame)
         }
     }, [])
 
     const selectRedTeam = () => {
         socket.emit('select-team', JSON.stringify({ team: 'red' }))
         setReady(false)
+        setTeam('red')
     }
     const selectBlueTeam = () => {
         socket.emit('select-team', JSON.stringify({ team: 'blue' }))
         setReady(false)
+        setTeam('blue')
     }
 
     const confirm = () => {

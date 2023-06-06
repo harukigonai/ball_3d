@@ -1,14 +1,15 @@
-import React, { Component, useEffect, useRef } from 'react'
+import React, { Component, useEffect, useRef, useState } from 'react'
 import Canvas from './Canvas'
 import { socket } from '../socket'
 
-export default function CanvasWrapper() {
+export default function CanvasWrapper({ team, exitToHomePage }) {
     const canvasRef = useRef(false)
+    const [result, setResult] = useState('')
 
     useEffect(() => {
         // Get canvas, pass to custom class
         let canvas = canvasRef.current
-        canvas = new Canvas(canvas)
+        canvas = new Canvas(canvas, setResult, exitToHomePage)
 
         const handleResize = () => {
             canvas.onWindowResize(window.innerWidth, window.innerHeight)
@@ -26,7 +27,9 @@ export default function CanvasWrapper() {
     }, [])
 
     return (
-        <div class="canvasContainer">
+        <div className="canvas-container">
+            <div className="my-team" style={{ backgroundColor: team }} />
+            <p className="game-result">{result}</p>
             <canvas ref={canvasRef} />
         </div>
     )

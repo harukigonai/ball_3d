@@ -12,7 +12,7 @@ export class Sky {
     num_stars = 1000
     stars_li
 
-    constructor(scene) {
+    constructor({ scene }) {
         const color = new THREE.Color('#FDB813')
         const geometry = new THREE.IcosahedronGeometry(1, 15)
         const material = new THREE.MeshBasicMaterial({ color: color })
@@ -29,10 +29,10 @@ export class Sky {
         this.scene = scene
     }
 
-    addMeshToScene(scene) {
-        scene.add(this.light)
-        scene.add(this.ambient_light)
-        scene.add(this.stars_points)
+    addMeshToScene() {
+        this.scene.add(this.light)
+        this.scene.add(this.ambient_light)
+        this.scene.add(this.stars_points)
     }
 
     // Move this until utils.js

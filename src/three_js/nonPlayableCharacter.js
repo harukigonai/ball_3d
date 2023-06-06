@@ -36,13 +36,11 @@ export class NonPlayableCharacter {
 
     keysPressed
 
-    constructor({
-        uuid: uuid,
-        playable: playable,
-        orbitControl: orbitControl,
-        camera: camera,
-        gameClient: gameClient,
-    }) {
+    live
+
+    scene
+
+    constructor({ position: position, uuid: uuid, team: team, scene: scene }) {
         this.uuid = uuid
 
         const geometry = new THREE.CylinderGeometry(
@@ -55,14 +53,20 @@ export class NonPlayableCharacter {
             side: THREE.FrontSide,
         })
         this.mesh = new THREE.Mesh(geometry, material)
-        this.mesh.position.set(0, 3, 0)
-    }
-
-    addMeshToScene(scene) {
-        scene.add(this.mesh)
-    }
-
-    updatePlayerFromGameClient(position) {
         this.mesh.position.set(position.x, position.y, position.z)
+
+        this.live = true
+        this.scene = scene
+    }
+
+    addMeshToScene() {
+        this.scene.add(this.mesh)
+    }
+
+    updatePlayerFromGameClient(position, live) {
+        this.mesh.position.set(position.x, position.y, position.z)
+        this.live = live
+
+        if (!this.live) this.scene.remove(this.mesh)
     }
 }

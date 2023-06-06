@@ -3,13 +3,12 @@ import { A, D, DIRECTIONS, S, SHIFT, W, SPACE } from './utils'
 import { g } from './ball'
 import { player_height, player_radius } from './nonPlayableCharacter'
 import { court_length, court_width } from './ground'
+import { toHaveDisplayValue } from '@testing-library/jest-dom/matchers'
 
 const dt = 0.015
-const eyeLevel = 1.7
+export const eyeLevel = 1.7
 
 export class PlayableCharacter {
-    uuid
-
     orbitControl
     camera
 
@@ -36,21 +35,27 @@ export class PlayableCharacter {
 
     keysPressed
 
+    live
+
+    playerMap
+
     constructor({
-        uuid: uuid,
         orbitControl: orbitControl,
         camera: camera,
         gameClient: gameClient,
+        team: team,
+        playerMap: playerMap,
     }) {
-        this.uuid = uuid
         this.orbitControl = orbitControl
         this.camera = camera
         this.gameClient = gameClient
         this.keysPressed = {}
-    }
 
-    addMeshToScene(scene) {
-        scene.add(this.mesh)
+        this.team = team
+
+        this.live = true
+
+        this.playerMap = playerMap
     }
 
     addKeyEventListeners() {
@@ -64,6 +69,36 @@ export class PlayableCharacter {
             (event) => (this.keysPressed[event.key.toLowerCase()] = false),
             false
         )
+    }
+
+    collidePlayer() {
+        this.playerMap.forEach((player, _) => {
+            if (player != this && player.live && this.live) {
+                const thisPosXZ = new THREE.Vector3(
+                    this.camera.position.x,
+                    0,
+                    this.camera.position.z
+                )
+                const playerPosXZ = new THREE.Vector3(
+                    player.mesh.position.x,
+                    0,
+                    player.mesh.position.z
+                )
+
+                const distToPlayer = thisPosXZ.distanceTo(playerPosXZ)
+                if (distToPlayer <= 2 * player_radius) {
+                    const towardPlayerNorm = playerPosXZ
+                        .clone()
+                        .sub(thisPosXZ)
+                        .normalize()
+                    const velTowardPlayer = this.vel
+                        .clone()
+                        .projectOnVector(towardPlayerNorm)
+                    if (towardPlayerNorm.dot(velTowardPlayer) > 0)
+                        this.vel = this.vel.clone().sub(velTowardPlayer)
+                }
+            }
+        })
     }
 
     update(delta, mousePressed, ballMap) {
@@ -80,16 +115,23 @@ export class PlayableCharacter {
             play = 'Idle'
         }
 
-        if (mousePressed) {
-            if (this.ballGrabbed) {
-                this.dragBallToCamera()
+        if (this.live) {
+            if (mousePressed) {
+                if (this.ballGrabbed) {
+                    this.dragBallToCamera()
+                } else {
+                    this.tryGrabBall(ballMap)
+                }
             } else {
-                this.tryGrabBall(ballMap)
+                if (this.ballGrabbed) {
+                    this.throwBall()
+
+                    this.ballGrabbed.grabbed = false
+                    this.ballGrabbed = null
+                }
             }
         } else {
             if (this.ballGrabbed) {
-                this.throwBall()
-
                 this.ballGrabbed.grabbed = false
                 this.ballGrabbed = null
             }
@@ -134,6 +176,8 @@ export class PlayableCharacter {
                 // move model & camera
                 this.vel.x = this.walkDirection.x * velocity
                 this.vel.z = this.walkDirection.z * velocity
+
+                this.collidePlayer()
             }
 
             if (this.keysPressed[SPACE]) {
@@ -156,16 +200,28 @@ export class PlayableCharacter {
         else if (this.camera.position.x < -court_width / 2 + player_radius)
             this.camera.position.x = -court_width / 2 + player_radius
 
-        if (this.camera.position.z > court_length / 2 - player_radius)
-            this.camera.position.z = court_length / 2 - player_radius
-        else if (this.camera.position.z < -court_length / 2 + player_radius)
-            this.camera.position.z = -court_length / 2 + player_radius
+        if (this.team == 'red') {
+            // Red can walk around in z: [-court_length / 2, 0]
+            if (this.camera.position.z > 0 - player_radius)
+                this.camera.position.z = 0 - player_radius
+            else if (this.camera.position.z < -court_length / 2 + player_radius)
+                this.camera.position.z = -court_length / 2 + player_radius
+        } else if (this.team == 'blue') {
+            // Red can walk around in z: [0, court_length / 2]
+            if (this.camera.position.z < 0 + player_radius)
+                this.camera.position.z = 0 + player_radius
+            else if (this.camera.position.z > court_length / 2 - player_radius)
+                this.camera.position.z = court_length / 2 - player_radius
+        }
 
-        if (sentUpdate && this.gameClient)
+        if (sentUpdate && this.gameClient && this.live)
             this.gameClient.updatePlayer(
                 this.camera.position
                     .clone()
-                    .add(new THREE.Vector3(0, -eyeLevel + player_height / 2, 0))
+                    .add(
+                        new THREE.Vector3(0, -eyeLevel + player_height / 2, 0)
+                    ),
+                this.live
             )
     }
 
@@ -198,33 +254,39 @@ export class PlayableCharacter {
     throwBall() {
         const newVel = new THREE.Vector3()
         this.camera.getWorldDirection(newVel)
-        newVel.multiplyScalar(15)
+        newVel.multiplyScalar(30)
 
         this.ballGrabbed.vel = newVel
+
+        this.ballGrabbed.live = true
 
         this.gameClient.updateBall(
             this.ballGrabbed.uuid,
             this.ballGrabbed.mesh.position,
-            this.ballGrabbed.vel
+            this.ballGrabbed.vel,
+            this.ballGrabbed.ang_vel,
+            this.ballGrabbed.live
         )
     }
 
     dragBallToCamera() {
         const newBallPos = new THREE.Vector3()
         this.camera.getWorldDirection(newBallPos)
-        newBallPos.multiplyScalar(2)
+        newBallPos.multiplyScalar(player_height / 2 + this.ballGrabbed.r + 0.5)
         newBallPos.add(this.camera.position)
 
         this.ballGrabbed.dragBallToPosition(newBallPos)
 
+        this.ballGrabbed.vel = new THREE.Vector3()
+        this.ballGrabbed.ang_vel = new THREE.Vector3()
+
         this.gameClient.updateBall(
             this.ballGrabbed.uuid,
             this.ballGrabbed.mesh.position,
-            this.ballGrabbed.vel
+            this.ballGrabbed.vel,
+            this.ballGrabbed.ang_vel,
+            this.ballGrabbed.live
         )
-
-        this.ballGrabbed.vel = new THREE.Vector3()
-        this.ballGrabbed.ang_vel = new THREE.Vector3()
     }
 
     tryGrabBall(ballMap) {
