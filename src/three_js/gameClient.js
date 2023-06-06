@@ -126,6 +126,6 @@ export class GameClient {
 
         this.setResult(result)
 
-        // setTimeout(this.exitToHomePage, 5000)
+        setTimeout(this.exitToHomePage, 5000)
     }
 }
