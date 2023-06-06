@@ -59,7 +59,7 @@ export class GameClient {
         // receive a message from the server
         socket.on('updatePlayer', (data) => {
             const packet = JSON.parse(data)
-
+            console.log('update received', packet)
             this.handleUpdatePlayer(packet)
         })
 
@@ -77,11 +77,12 @@ export class GameClient {
         })
     }
 
-    updatePlayer(position, live) {
+    updatePlayer(position, vel, live) {
         socket.emit(
             'updatePlayer',
             JSON.stringify({
                 position,
+                vel,
                 live,
             })
         )
@@ -101,29 +102,17 @@ export class GameClient {
         )
     }
 
-    handleUpdateBall(ballFromSrvr) {
-        const ball = this.gameState.ballMap.get(ballFromSrvr.uuid)
-        ball.updateBallFromGameClient(
-            ballFromSrvr.position,
-            ballFromSrvr.quaternion,
-            ballFromSrvr.vel,
-            ballFromSrvr.ang_vel,
-            ballFromSrvr.live
-        )
+    handleUpdateBall({ uuid, position, quaternion, vel, ang_vel, live }) {
+        const ball = this.gameState.ballMap.get(uuid)
+        ball.updateBallFromGameClient(position, quaternion, vel, ang_vel, live)
     }
 
-    handleUpdatePlayer(playerFromSrvr) {
-        const player = this.gameState.playerMap.get(playerFromSrvr.uuid)
-        player.updatePlayerFromGameClient(
-            playerFromSrvr.position,
-            playerFromSrvr.vel,
-            playerFromSrvr.live
-        )
+    handleUpdatePlayer({ uuid, position, vel, live }) {
+        const player = this.gameState.playerMap.get(uuid)
+        player.updatePlayerFromGameClient(position, vel, live)
     }
 
-    handleGameOver(resultFromServer) {
-        const { result } = resultFromServer
-
+    handleGameOver({ result }) {
         this.setResult(result)
 
         setTimeout(this.exitToHomePage, 5000)

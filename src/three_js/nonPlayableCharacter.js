@@ -36,7 +36,7 @@ export class NonPlayableCharacter {
 
     jumpSpeed = 5
 
-    vel = new THREE.Vector3()
+    vel
 
     ballGrabbed
 
@@ -114,7 +114,7 @@ export class NonPlayableCharacter {
             this.mesh.position.y + player_height / 2 + 1,
             this.mesh.position.z
         )
-        this.vel = vel
+        this.vel = new THREE.Vector3(vel.x, vel.y, vel.z)
         this.live = live
 
         if (!this.live) {

@@ -28,7 +28,7 @@ export class PlayableCharacter {
     runSpeed = 15
     walkSpeed = 10
     jumpSpeed = 5
-    vel = new THREE.Vector3()
+    vel
 
     ballGrabbed
 
@@ -53,6 +53,7 @@ export class PlayableCharacter {
         this.gameClient = gameClient
         this.keysPressed = {}
 
+        this.vel = new THREE.Vector3()
         this.team = team
 
         this.live = true
