@@ -36,13 +36,7 @@ export default class Canvas {
         this.connectToGameServer()
     }
 
-    setupScene(
-        ballMapData,
-        playerMapData,
-        gameClient,
-        gameState,
-        { renderer, constructBallMap, constructPlayerMap }
-    ) {
+    setupScene(ballMapData, playerMapData, gameClient) {
         // Camera
         const camera = new THREE.PerspectiveCamera(
             75,
@@ -56,16 +50,16 @@ export default class Canvas {
             camera.aspect = window.innerWidth / window.innerHeight
             camera.updateProjectionMatrix()
 
-            renderer.setSize(window.innerWidth, window.innerHeight)
+            this.renderer.setSize(window.innerWidth, window.innerHeight)
         })
 
         // OrbitControls
         const orbitControls = new PointerLockControls(
             camera,
-            renderer.domElement
+            this.renderer.domElement
         )
 
-        renderer.domElement.addEventListener('click', () => {
+        this.renderer.domElement.addEventListener('click', () => {
             orbitControls.lock()
         })
 
@@ -76,14 +70,14 @@ export default class Canvas {
         const listener = new THREE.AudioListener()
         camera.add(listener)
 
-        gameState.ballMap = constructBallMap(
+        this.gameState.ballMap = this.constructBallMap(
             ballMapData,
             gameClient,
             scene,
             listener
         )
 
-        gameState.playerMap = constructPlayerMap(
+        this.gameState.playerMap = this.constructPlayerMap(
             playerMapData,
             orbitControls,
             camera,
@@ -92,19 +86,22 @@ export default class Canvas {
             listener
         )
 
-        gameState.ballMap.forEach((ball, _) => ball.addMeshToScene())
+        this.gameState.ballMap.forEach((ball, _) => ball.addMeshToScene())
 
         let me
         let meLive = true
-        gameState.playerMap.forEach((player, _) => {
+        this.gameState.playerMap.forEach((player, _) => {
             if (player instanceof NonPlayableCharacter) player.addMeshToScene()
             else if (player instanceof PlayableCharacter) {
                 player.addKeyEventListeners()
-                renderer.domElement.addEventListener('pointerdown', (e) => {
-                    player.mousePressed = true
-                    player.whichMousePressed = e.which
-                })
-                renderer.domElement.addEventListener('pointerup', () => {
+                this.renderer.domElement.addEventListener(
+                    'pointerdown',
+                    (e) => {
+                        player.mousePressed = true
+                        player.whichMousePressed = e.which
+                    }
+                )
+                this.renderer.domElement.addEventListener('pointerup', () => {
                     player.mousePressed = false
                 })
                 me = player
@@ -121,14 +118,14 @@ export default class Canvas {
         const animate = () => {
             const mixerUpdateDelta = clock.getDelta()
 
-            gameState.playerMap.forEach((player, _) => {
+            this.gameState.playerMap.forEach((player, _) => {
                 if (player instanceof PlayableCharacter) {
-                    player.update(mixerUpdateDelta, gameState.ballMap)
+                    player.update(mixerUpdateDelta, this.gameState.ballMap)
                 }
             })
 
-            gameState.ballMap.forEach((ball, _) =>
-                ball.update(gameState.ballMap, gameState.playerMap)
+            this.gameState.ballMap.forEach((ball, _) =>
+                ball.update(this.gameState.ballMap, this.gameState.playerMap)
             )
 
             if (meLive && !me.live) {
@@ -138,13 +135,15 @@ export default class Canvas {
 
             if (sky) sky.update()
 
-            renderer.render(scene, camera)
+            this.renderer.render(scene, camera)
 
             requestAnimationFrame(animate)
         }
 
         animate()
     }
+
+    destroy() {}
 
     constructBallMap(ballMapFromSrvr, gameClient, scene, listener) {
         const map = new Map(Object.entries(ballMapFromSrvr))
@@ -228,7 +227,7 @@ export default class Canvas {
 
     connectToGameServer() {
         this.gameClient = new GameClient({
-            setupScene: this.setupScene,
+            setupScene: this.setupScene.bind(this),
             setupSceneArgs: {
                 renderer: this.renderer,
                 constructBallMap: this.constructBallMap,

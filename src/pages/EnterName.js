@@ -1,11 +1,25 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React, { useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { socket } from '../socket.js'
 
-export default function EnterName({ username, setUsername }) {
+export default function EnterName({
+    username,
+    setUsername,
+    gameOnGoing,
+    catchInGameWanderer,
+}) {
     const onChangeInput = (e) => setUsername(e.target.value)
     const onClickButton = (e) =>
         socket.emit('enter-name', JSON.stringify({ username }))
+    const navigate = useNavigate()
+
+    useEffect(() => {
+        if (gameOnGoing) navigate('/')
+    }, [gameOnGoing, navigate])
+
+    useEffect(() => {
+        catchInGameWanderer()
+    }, [catchInGameWanderer])
 
     return (
         <div className="home-background">

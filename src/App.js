@@ -14,28 +14,97 @@ function Root() {
     const [ready, setReady] = useState(false)
     const [team, setTeam] = useState('')
 
+    const [inGame, setInGame] = useState(false)
+    const [gameOnGoing, setGameOnGoing] = useState(false)
+
+    const catchInGameWanderer = () => {
+        if (inGame) {
+            setUsername('')
+            setReady(false)
+            setTeam('')
+
+            setInGame(false)
+
+            socket.emit('in-game-wanderer', {})
+
+            navigate('/')
+        }
+    }
+
     const exitToHomePage = () => {
         navigate('/')
 
         setUsername('')
         setReady(false)
         setTeam('')
+
+        setGameOnGoing(false)
+        setInGame(false)
     }
 
     useEffect(() => {
-        socket.on('return-to-enter-name', (data) => navigate('/enter-name'))
-        socket.on('return-to-select-team', (data) =>
-            navigate('/team-selection')
-        )
-    }, [navigate])
+        const returnToEnterNameHandler = () => navigate('/enter-name')
+        const returnToSelectTeamHandler = () => navigate('/team-selection')
+        const gameOnGoingHandler = () => {
+            setGameOnGoing(true)
+
+            setUsername('')
+            setReady(false)
+            setTeam('')
+
+            setGameOnGoing(false)
+            setInGame(false)
+
+            navigate('/')
+        }
+        const gameNotOnGoingHandler = () => {
+            setGameOnGoing(false)
+            setInGame(false)
+        }
+        const startGameHandler = () => {
+            setGameOnGoing(true)
+            setInGame(true)
+
+            navigate('/play')
+        }
+
+        socket.on('return-to-enter-name', returnToEnterNameHandler)
+        socket.on('return-to-select-team', returnToSelectTeamHandler)
+
+        socket.on('game-on-going', gameOnGoingHandler)
+        socket.on('game-not-on-going', gameNotOnGoingHandler)
+        socket.on('start-game', startGameHandler)
+
+        return () => {
+            socket.off('return-to-enter-name', returnToEnterNameHandler)
+            socket.off('return-to-select-team', returnToSelectTeamHandler)
+
+            socket.off('game-on-going', gameOnGoingHandler)
+            socket.off('game-not-on-going', gameNotOnGoingHandler)
+            socket.off('start-game', startGameHandler)
+        }
+    }, [inGame, navigate])
 
     return (
         <Routes>
-            <Route path="/" element={<Home />} />
+            <Route
+                path="/"
+                element={
+                    <Home
+                        gameOnGoing={gameOnGoing}
+                        catchInGameWanderer={catchInGameWanderer}
+                    />
+                }
+            />
             <Route
                 path="/enter-name"
                 element={
-                    <EnterName username={username} setUsername={setUsername} />
+                    <EnterName
+                        username={username}
+                        setUsername={setUsername}
+                        gameOnGoing={gameOnGoing}
+                        catchInGameWanderer={catchInGameWanderer}
+                    />
                 }
             />
             <Route
@@ -45,6 +114,9 @@ function Root() {
                         ready={ready}
                         setReady={setReady}
                         setTeam={setTeam}
+                        gameOnGoing={gameOnGoing}
+                        catchInGameWanderer={catchInGameWanderer}
+                        username={username}
                     />
                 }
             />
@@ -54,6 +126,7 @@ function Root() {
                     <CanvasWrapper
                         team={team}
                         exitToHomePage={exitToHomePage}
+                        inGame={inGame}
                     />
                 }
             />

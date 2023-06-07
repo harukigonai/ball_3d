@@ -3,12 +3,31 @@ import { useNavigate } from 'react-router-dom'
 import { socket } from '../socket.js'
 import { ReactComponent as GreenCheckmark } from '../svgs/green_checkmark.svg'
 
-export default function TeamSelection({ ready, setReady, setTeam }) {
+export default function TeamSelection({
+    ready,
+    setReady,
+    setTeam,
+    gameOnGoing,
+    username,
+    catchInGameWanderer,
+}) {
     const [redTeam, setRedTeam] = useState([])
     const [blueTeam, setBlueTeam] = useState([])
     const [unselectedTeam, setUnselectedTeam] = useState([])
 
     const navigate = useNavigate()
+
+    useEffect(() => {
+        catchInGameWanderer()
+    }, [catchInGameWanderer])
+
+    useEffect(() => {
+        if (gameOnGoing) navigate('/')
+    }, [gameOnGoing, navigate])
+
+    useEffect(() => {
+        if (username === '') navigate('/')
+    }, [username, navigate])
 
     useEffect(() => {
         const teamSelectionInfo = (data) => {
@@ -19,16 +38,12 @@ export default function TeamSelection({ ready, setReady, setTeam }) {
             setUnselectedTeam(packet.unselectedTeam)
         }
 
-        const startGame = () => navigate('/play')
-
         socket.on('team-selection-info', teamSelectionInfo)
-        socket.on('start-game', startGame)
 
         socket.emit('request-team-selection-info', {})
 
         return () => {
             socket.off('team-selection-info', teamSelectionInfo)
-            socket.off('start-game', startGame)
         }
     }, [navigate])
 

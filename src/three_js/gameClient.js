@@ -19,18 +19,11 @@ export class GameClient {
 
     setResult
 
-    constructor({
-        setupScene,
-        setupSceneArgs,
-        gameState,
-        setResult,
-        exitToHomePage,
-    }) {
+    constructor({ setupScene, gameState, setResult, exitToHomePage }) {
         this.ballMap = new Map()
         this.playerMap = new Map()
 
         this.setupScene = setupScene
-        this.setupSceneArgs = setupSceneArgs
         this.gameState = gameState
 
         this.initDone = false
@@ -38,43 +31,53 @@ export class GameClient {
         this.exitToHomePage = exitToHomePage
     }
 
+    initHandler(data) {
+        const packet = JSON.parse(data)
+
+        if (!this.initDone) {
+            this.initDone = true
+
+            this.setupScene(packet.ballMap, packet.playerMap, this)
+        }
+    }
+
+    updatePlayerHandler(data) {
+        const packet = JSON.parse(data)
+        this.handleUpdatePlayer(packet)
+    }
+
+    updateBallHandler(data) {
+        const packet = JSON.parse(data)
+
+        this.handleUpdateBall(packet)
+    }
+
+    gameOverHandler(data) {
+        const packet = JSON.parse(data)
+
+        console.log(this.handleGameOver)
+
+        this.handleGameOver(packet)
+    }
+
     setup() {
-        // receive a message from the server
-        socket.on('init', (data) => {
-            const packet = JSON.parse(data)
+        socket.on('init', this.initHandler.bind(this))
 
-            if (!this.initDone) {
-                this.initDone = true
+        socket.on('updatePlayer', this.updatePlayerHandler.bind(this))
 
-                this.setupScene(
-                    packet.ballMap,
-                    packet.playerMap,
-                    this,
-                    this.gameState,
-                    this.setupSceneArgs
-                )
-            }
-        })
+        socket.on('updateBall', this.updateBallHandler.bind(this))
 
-        // receive a message from the server
-        socket.on('updatePlayer', (data) => {
-            const packet = JSON.parse(data)
-            console.log('update received', packet)
-            this.handleUpdatePlayer(packet)
-        })
+        socket.on('game-over', this.gameOverHandler.bind(this))
+    }
 
-        // receive a message from the server
-        socket.on('updateBall', (data) => {
-            const packet = JSON.parse(data)
+    destroy() {
+        socket.off('init', this.initHandler.bind(this))
 
-            this.handleUpdateBall(packet)
-        })
+        socket.on('updatePlayer', this.updatePlayerHandler.bind(this))
 
-        socket.on('game-over', (data) => {
-            const packet = JSON.parse(data)
+        socket.on('updateBall', this.updateBallHandler.bind(this))
 
-            this.handleGameOver(packet)
-        })
+        socket.on('game-over', this.gameOverHandler.bind(this))
     }
 
     updatePlayer(position, vel, live) {

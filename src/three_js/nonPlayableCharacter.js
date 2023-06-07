@@ -87,19 +87,7 @@ export class NonPlayableCharacter {
             color: this.team,
         })
         this.nameMesh = new THREE.Mesh(geometry, material)
-        this.nameMesh.position.set(
-            this.mesh.position.x,
-            this.mesh.position.y + player_height / 2 + 0.1,
-            this.mesh.position.z
-        )
-
-        const namePositionOffset = this.name.length * 0.2
-        if (this.team === 'blue') {
-            this.nameMesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), Math.PI)
-            this.nameMesh.position.x += namePositionOffset
-        } else {
-            this.nameMesh.position.x -= namePositionOffset
-        }
+        this.setNameMeshPosition()
     }
 
     addMeshToScene() {
@@ -109,17 +97,31 @@ export class NonPlayableCharacter {
 
     updatePlayerFromGameClient(position, vel, live) {
         this.mesh.position.set(position.x, position.y, position.z)
-        this.nameMesh.position.set(
-            this.mesh.position.x,
-            this.mesh.position.y + player_height / 2 + 1,
-            this.mesh.position.z
-        )
+        this.setNameMeshPosition()
+
         this.vel = new THREE.Vector3(vel.x, vel.y, vel.z)
         this.live = live
 
         if (!this.live) {
             this.scene.remove(this.mesh)
             this.scene.remove(this.nameMesh)
+        }
+    }
+
+    setNameMeshPosition() {
+        this.nameMesh.position.set(
+            this.mesh.position.x,
+            this.mesh.position.y + player_height / 2 + 0.1,
+            this.mesh.position.z
+        )
+
+        const namePositionOffset = this.name.length * 0.2
+        if (this.team === 'blue') {
+            this.nameMesh.setRotationFromQuaternion(new THREE.Quaternion())
+            this.nameMesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), Math.PI)
+            this.nameMesh.position.x += namePositionOffset
+        } else {
+            this.nameMesh.position.x -= namePositionOffset
         }
     }
 }
