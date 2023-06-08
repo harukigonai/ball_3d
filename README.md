@@ -1,3 +1,22 @@
+# Ball 3D
+
+## A Little About Ball 3D
+
+Ball 3D is a 3D, first-person, online multiplayer dodgeball game written using Three.js, React.js, and Node.js.
+
+You can check it out at [https://ball-3d.herokuapp.com/](https://ball-3d.herokuapp.com/). 
+
+## Instructions
+
+
+
+## Controls
+
+- Walk: WASD
+- Sprint: Shift + WASD
+- Look Around: Mouse Movement
+- Jump: Spacebar
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
@@ -6,18 +25,13 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 In the project directory, you can run:
 
-### `npm start`
+### `npm run dev`
 
 Runs the app in the development mode.\
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
 The page will reload when you make changes.\
 You may also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
 ### `npm run build`
 
@@ -29,7 +43,7 @@ Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
-### `npm run eject`
+### `npm run start`
 
 **Note: this is a one-way operation. Once you `eject`, you can't go back!**
 
